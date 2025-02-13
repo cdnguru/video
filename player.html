@@ -170,14 +170,15 @@ function updateGauges() {
 }
 
 async function fetchCdnInfo(fqdn) {
-        try {
-            const response = await fetch(`https://ip-api.com/json/${fqdn}`);
-            const data = await response.json();
-            document.getElementById("cdnOrgName").textContent = data.org || "?";
-        } catch (error) {
-            console.error("Error fetching CDN info:", error);
-     }
+  try {
+    const response = await fetch(`https://get.geojs.io/v1/ip/geo/${fqdn}.json`);
+    const data = await response.json();
+    document.getElementById("cdnOrgName").textContent = data.org || "?";
+  } catch (error) {
+    console.error("Error fetching CDN info:", error);
+  }
 }
+
 
 function displayDrmInfo() {
         const drmInfo = player.drmInfo();
