@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Video Test Player - Shaka</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <style>
+    body {
+      font-family: 'Press Start 2P', monospace;
+      background: black;
+      color: limegreen;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+    }
+    .container {
+      width: 94%;
+      max-width: 1200px;
+      padding: 10px;
+      background: #111;
+      border: 4px solid limegreen;
+      box-shadow: 0 0 15px limegreen;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 0;
+    }
+    video {
+      width: 100%;
+      height: auto;
+    /*  border: 4px solid limegreen; */
+      margin-top: 0;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    .retro-input {
+      background: black;
+      color: limegreen;
+      border: 4px solid limegreen;
+      padding: 10px;
+      flex-grow: 1;
+      font-family: 'Press Start 2P', monospace;
+      min-width: 300px;
+    }
+    .retro-button {
+      background: black;
+      color: limegreen;
+      border: 4px solid limegreen;
+      padding: 10px;
+      font-family: 'Press Start 2P', monospace;
+      cursor: pointer;
+    }
+    .gauges-container {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 20px;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .gauge {
+      width: 12%;
+      padding: 10px;
+      border: 4px solid limegreen;
+      text-align: center;
+      font-size: 12px;
+    }
+    .graphs-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+      width: 100%;
+    }
+    .graph {
+      width: 48%;
+      height: 300px;
+      border: 4px solid limegreen;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <video id="videoPlayer" controls></video>
+
+    <div class="controls">
+      <input type="text" id="manifestUrl" class="retro-input" placeholder="Enter Manifest URL" 
+        value="https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd">
+      <button id="playButton" class="retro-button">▶ Play</button>
+    </div>
+
+<div class="gauges-container">
+    <div class="gauge">Frames: <span id="decodedFrames">0</span></div>
+    <div class="gauge">Dropped: <span id="droppedFrames">0</span></div>
+    <div class="gauge">Corrupt: <span id="corruptedFrames">0</span></div>
+    <div class="gauge">Stalls: <span id="stallsDetected">0</span></div>
+    <div class="gauge">Played: <span id="playTime">0s</span></div>
+    <div class="gauge">Rebuffering: <span id="bufferingTime">0s</span></div>
+    <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span></div>
+    <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span></div>
+    <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
+    <div class="gauge">CDN: <span id="cdnOrgName">?</span></div>
+    <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
+    <div class="gauge">Live: <span id="liveStatus">False</span></div>
+</div>
+
+    <div class="graphs-container">
+      <div id="bandwidthGraph" class="graph"></div>
+      <div id="latencyGraph" class="graph"></div>
+    </div>
+  </div>
+  
+  <script>
+    let player = null;
+    let bandwidthData = Array(10).fill(0); // Pre-fill with zero values
+    let latencyData = [];
+    let xAxisLabels = Array.from({ length: 10 }, (_, i) => i + 1); // Fixed 1-10 numbering
+
+    async function initShakaPlayer() {
+      if (!shaka.Player.isBrowserSupported()) {
+        console.error("Shaka Player is not supported on this browser.");
+        return;
+      }
+
+      const video = document.getElementById("videoPlayer");
+      player = new shaka.Player(video);
+      document.getElementById("videoPlayer").shakaPlayer = player;
+      player.configure({ streaming: { autoSelect: false } });
+      player.configure({
+  manifest: {
+    hls: {
+      useFullSegmentsForStartTime: true, // Helps with incorrect segment start times
+      ignoreTextStreamFailures: true    // Ignore subtitle parsing errors
+    }
+  }
+});
+
+// Function to update the new gauges
+function updateGauges() {
+    if (!player) return;
+    
+    const stats = player.getStats();
+
+    document.getElementById("decodedFrames").textContent = stats.decodedFrames || 0;
+    document.getElementById("droppedFrames").textContent = stats.droppedFrames || 0;
+    document.getElementById("corruptedFrames").textContent = stats.corruptedFrames || 0;
+    document.getElementById("stallsDetected").textContent = stats.stallsDetected || 0;
+    document.getElementById("playTime").textContent = Math.round(stats.playTime) + "s";
+    document.getElementById("bufferingTime").textContent = Math.round(stats.bufferingTime) + "s";
+
+    const estimatedBandwidthMbps = stats.estimatedBandwidth ? Math.floor(stats.estimatedBandwidth / 1e6) : 0;
+    const streamBandwidthMbps = stats.streamBandwidth ? Math.floor(stats.streamBandwidth / 1e6) : 0;
+
+    document.getElementById("estimatedBandwidth").textContent = estimatedBandwidthMbps + " Mbps";
+    document.getElementById("streamBandwidth").textContent = streamBandwidthMbps + " Mbps";
+    
+    // Update the protocol display
+    document.getElementById("httpProtocol").textContent = detectedProtocol || "?";
+}
+
+async function fetchCdnInfo(fqdn) {
+        try {
+            const response = await fetch(`http://ip-api.com/json/${fqdn}`);
+            const data = await response.json();
+            document.getElementById("cdnOrgName").textContent = data.org || "?";
+        } catch (error) {
+            console.error("Error fetching CDN info:", error);
+     }
+}
+
+function displayDrmInfo() {
+        const drmInfo = player.drmInfo();
+        const keySystem = player.keySystem();
+        document.getElementById("drmKeySystem").textContent = keySystem || "False";
+}
+
+function displayLiveStatus() {
+        const isLive = player.isLive();
+        document.getElementById("liveStatus").textContent = isLive ? "True" : "False";
+}
+
+
+function updateSegmentLength() {
+  console.log("updateSegmentLength() triggered!");
+
+  if (!player) {
+    console.warn("Shaka Player not initialized yet.");
+    return;
+  }
+
+  const activeTrack = player.getVariantTracks().find(track => track.active);
+  if (!activeTrack) {
+    console.warn("No active track found.");
+    document.getElementById("gauge").textContent = `Segment length: --s`;
+    return;
+  }
+
+  const bitrate = activeTrack.videoBandwidth; // Bits per second
+  console.log(`Bitrate: ${bitrate} bps`);
+
+  if (!lastSegmentSize) {
+    console.warn("No segment size captured yet.");
+    document.getElementById("gauge").textContent = `Segment length: --s`;
+    return;
+  }
+
+  // Calculate segment duration based on actual chunk size
+  const segmentDuration = (lastSegmentSize * 8) / bitrate;
+  console.log(`Actual Segment Duration: ${segmentDuration.toFixed(1)} seconds`);
+
+  document.getElementById("gauge").textContent = `Segment length: ${segmentDuration.toFixed(1)}s`;
+}
+
+// Ensure gauges update every second
+setInterval(updateGauges, 1000);
+
+// Stores the last 10 segment latency points
+let latencyData = Array.from({ length: 10 }, (_, i) => ({ x: i + 1, y: null, type: null })); // Pre-fill empty slots
+
+// Function to update segment latency and shift data properly
+function addLatencyData(segmentLatency, segmentType) {
+    // Remove oldest entry to keep only 10 data points
+    latencyData.shift();
+
+    // Assign correct X-axis position by cycling from 1-10
+    latencyData.push({ 
+        x: 10, // Always append new data at the last position (will shift properly)
+        y: segmentLatency, 
+        type: segmentType 
+    });
+
+    // Shift all X values forward (1 → 2, 2 → 3, ..., 9 → 10)
+    for (let i = 0; i < latencyData.length; i++) {
+        latencyData[i].x = i + 1; // Ensure values are 1-10
+    }
+
+    // Update the graph
+    updateLatencyGraph();
+}
+   // Detect HTTP Protocol (HTTP/1.1, HTTP/2, HTTP/3)
+      player.getNetworkingEngine().registerResponseFilter((type, response) => {
+          if (response && response.headers) {
+              if (response.headers['alt-svc'] && response.headers['alt-svc'].includes('h3')) {
+                  detectedProtocol = "HTTP/3";
+              } else if (response.headers[':status'] && response.headers[':status'] === "h2") {
+                  detectedProtocol = "HTTP/2";
+              } else {
+                  detectedProtocol = "HTTP/1.1";
+              }
+          }
+      });
+// Hook into segment download events
+player.getNetworkingEngine().registerResponseFilter((type, response) => {
+    if (type === shaka.net.NetworkingEngine.RequestType.SEGMENT) {
+        const segmentLatency = response.timeMs;
+        const segmentType = response.uri.includes(".m4v") ? "video" : "audio";
+        
+        addLatencyData(segmentLatency, segmentType);
+    }
+});
+
+// Update the scatter plot with correctly cycled X values
+function updateLatencyGraph() {
+    const audioData = latencyData.filter(d => d.type === "audio").map(d => ({ x: d.x, y: d.y }));
+    const videoData = latencyData.filter(d => d.type === "video").map(d => ({ x: d.x, y: d.y }));
+
+    window.latencyChart.updateSeries([
+        { name: "Audio Segments", data: audioData },
+        { name: "Video Segments", data: videoData }
+    ]);
+}
+
+// Update the scatter plot with corrected X values
+function updateLatencyGraph() {
+    const audioData = latencyData.filter(d => d.type === "audio").map(d => ({ x: d.x, y: d.y }));
+    const videoData = latencyData.filter(d => d.type === "video").map(d => ({ x: d.x, y: d.y }));
+
+    window.latencyChart.updateSeries([
+        { name: "Audio Segments", data: audioData },
+        { name: "Video Segments", data: videoData }
+    ]);
+}
+
+      document.getElementById("playButton").addEventListener("click", async () => {
+        const manifestUrl = document.getElementById("manifestUrl").value;
+        try {
+          await player.load(manifestUrl);
+          video.play();
+          console.log("Video loaded and playing.");
+          const domain = new URL(manifestUrl).hostname;
+          await fetchCdnInfo(domain);
+        } catch (error) {
+          console.error("Error loading video:", error);
+        }
+      });
+
+      initGraphs();
+      setInterval(updateGraphs, 1000);
+    
+      const manifestUrl = document.getElementById("manifestUrl").value;
+      const domain = new URL(manifestUrl).hostname;
+      await fetchCdnInfo(domain);
+
+      player.addEventListener('drmsessionupdate', displayDrmInfo);
+      displayLiveStatus();
+}
+
+    function initGraphs() {
+      window.bandwidthChart = new ApexCharts(document.querySelector("#bandwidthGraph"), {
+        chart: { type: 'line', height: 300, toolbar: { show: false } },
+        series: [{ name: 'Bandwidth (Mbps)', data: [] }],
+        colors: ['limegreen'],
+        stroke: { curve: 'smooth', width: 1.5 },
+        grid: { show: false },
+        yaxis: {
+          labels: { style: { fontSize: '16px', color: 'white' } },
+          title: { text: 'Mbps', style: { fontSize: '18px', color: 'limegreen', fontWeight: 'bold' } }
+        },
+        xaxis: { labels: { style: { fontSize: '14px', color: 'white' } } }
+      });
+
+      window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
+        chart: { type: 'scatter', height: 300, toolbar: { show: false } },
+        series: [{ name: 'Audio Segments', data: [], color: 'blue' }, { name: 'Video Segments', data: [], color: 'green' }],
+        markers: { size: 5, strokeWidth: 0 },
+        grid: { show: false },
+        yaxis: {
+          labels: { style: { fontSize: '16px', color: 'white' } },
+          title: { text: 'ms', style: { fontSize: '18px', color: 'limegreen', fontWeight: 'bold' } }
+        },
+        xaxis: { categories: xAxisLabels, labels: { style: { fontSize: '14px', color: 'white' } } }
+      });
+
+      window.bandwidthChart.render();
+      window.latencyChart.render();
+    }
+
+    function updateLatencyGraph() {
+      const audioData = latencyData.filter(d => d.type === "audio").map(d => ({ x: d.x, y: d.y }));
+      const videoData = latencyData.filter(d => d.type === "video").map(d => ({ x: d.x, y: d.y }));
+
+      window.latencyChart.updateSeries([
+        { name: "Audio Segments", data: audioData },
+        { name: "Video Segments", data: videoData }
+      ]);
+    }
+
+    function updateGraphs() {
+ if (!player) return;
+
+    const stats = player.getStats();
+    const estimatedBandwidth = stats.estimatedBandwidth ? Math.floor(stats.estimatedBandwidth / 1e6) : 0;
+
+    // Push new data while keeping only the last 10 points
+    bandwidthData.push(estimatedBandwidth);
+    if (bandwidthData.length > 10) bandwidthData.shift();
+
+    // Update the text display
+    document.getElementById("estimatedBandwidth").textContent = estimatedBandwidth + " Mbps";
+
+    // Update the bandwidth graph
+    window.bandwidthChart.updateSeries([{ data: bandwidthData }]);
+}
+    document.addEventListener("DOMContentLoaded", initShakaPlayer);
+  </script>
+</body>
+</html>
