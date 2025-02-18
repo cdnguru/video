@@ -386,20 +386,20 @@ document.getElementById("playButton").addEventListener("click", async () => {
         stroke: { curve: 'smooth', width: 1.5 },
         grid: { show: false },
         yaxis: {
-          labels: { style: { fontSize: '16px', color: 'limegreen' } },
-          title: { text: 'Mbps', style: { fontSize: '18px', color: 'limegreen' } }
+          labels: { style: { fontSize: '14px', color: 'limegreen' } },
+          title: { text: 'Mbps', style: { fontSize: '14px', color: 'limegreen' } }
         },
         xaxis: { labels: { style: { fontSize: '14px', color: 'limegreen' } } }
       });
 
       window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
         chart: { type: 'scatter', height: 300, toolbar: { show: false } },
-        series: [{ name: 'Audio Segments', data: [], color: 'pink' }, { name: 'Video Segments', data: [], color: 'limegreen' }],
+        series: [{ name: 'Audio Segments', data: [], color: '#FF6EC7' }, { name: 'Video Segments', data: [], color: 'limegreen' }],
         markers: { size: 4, strokeWidth: 0 },
         grid: { show: false },
         yaxis: {
-          labels: { style: { fontSize: '16px', color: 'white' } },
-          title: { text: 'Latency', style: { fontSize: '18px', color: 'limegreen' } }
+          labels: { style: { fontSize: '14px', color: 'limegreen' } },
+          title: { text: 'Latency', style: { fontSize: '14px', color: 'limegreen' } }
         },
         xaxis: { categories: xAxisLabels, labels: { style: { fontSize: '14px', color: 'limegreen' } } }
       });
