@@ -110,7 +110,7 @@
     <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span></div>
     <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span></div>
     <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
-    <div class="gauge">CDN: <span id="cdnOrgName">?</span></div>
+    <div class="gauge">CDN: <span id="whoisOrgName">?</span></div>
     <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
     <div class="gauge">Live: <span id="liveStatus">False</span></div>
 </div>
@@ -169,14 +169,34 @@ function updateGauges() {
     document.getElementById("httpProtocol").textContent = detectedProtocol || "?";
 }
 
-async function fetchCdnInfo(fqdn) {
-  try {
-    const response = await fetch(`https://get.geojs.io/v1/ip/geo/${fqdn}.json`);
-    const data = await response.json();
-    document.getElementById("cdnOrgName").textContent = data.org || "?";
-  } catch (error) {
-    console.error("Error fetching CDN info:", error);
-  }
+async function resolveDomainToIP(domain) {
+    try {
+        const response = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
+        const data = await response.json();
+        if (data && data.Answer && data.Answer.length > 0) {
+            return data.Answer[0].data; // Returns the first resolved IP
+        }
+    } catch (error) {
+        console.error("Error resolving domain to IP:", error);
+    }
+    return null; // Return null if no IP was found
+}
+
+async function fetchWhoisInfo(ip) {
+    try {
+        const response = await fetch(`https://rdap.org/ip/${ip}`);
+        const data = await response.json();
+
+        // Extract organization info
+        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[3] || "Unknown";
+        let networkName = data.name || "Unknown";
+
+        document.getElementById("whoisOrgName").textContent = orgName;
+        document.getElementById("whoisNetwork").textContent = networkName;
+        document.getElementById("whoisIP").textContent = ip;
+    } catch (error) {
+        console.error("Error fetching WHOIS data:", error);
+    }
 }
 
 
@@ -293,18 +313,37 @@ function updateLatencyGraph() {
     ]);
 }
 
-      document.getElementById("playButton").addEventListener("click", async () => {
-        const manifestUrl = document.getElementById("manifestUrl").value;
-        try {
-          await player.load(manifestUrl);
-          video.play();
-          console.log("Video loaded and playing.");
-          const domain = new URL(manifestUrl).hostname;
-          await fetchCdnInfo(domain);
-        } catch (error) {
-          console.error("Error loading video:", error);
+document.getElementById("playButton").addEventListener("click", async () => {
+    const manifestUrl = document.getElementById("manifestUrl").value;
+    try {
+        // Load the video and play it
+        await player.load(manifestUrl);
+        video.play();
+        console.log("Video loaded and playing.");
+
+        // Extract domain from manifest URL
+        const domain = new URL(manifestUrl).hostname;
+        console.log(`Resolving domain: ${domain}`);
+
+        // Fetch CDN info (existing functionality)
+        await fetchCdnInfo(domain);
+
+        // Resolve domain to IP
+        const ip = await resolveDomainToIP(domain);
+        if (ip) {
+            console.log(`Resolved IP: ${ip}`);
+            await fetchWhoisInfo(ip); // Perform WHOIS lookup on the resolved IP
+        } else {
+            console.warn("Could not resolve IP address.");
+            document.getElementById("whoisOrgName").textContent = "Unknown";
+            document.getElementById("whoisNetwork").textContent = "Unknown";
+            document.getElementById("whoisIP").textContent = "N/A";
         }
-      });
+    } catch (error) {
+        console.error("Error loading video:", error);
+    }
+});
+
 
       initGraphs();
       setInterval(updateGraphs, 1000);
