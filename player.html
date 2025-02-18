@@ -254,7 +254,7 @@ async function pingIP(ip) {
     const start = new Date().getTime();  // Start time (in milliseconds)
 
     try {
-        const response = await fetch(`https://${domain}`);  // Send a GET request to the resolved IP
+        const response = await fetch(`https://${domain}/ping`);  // Send a GET request to the resolved IP
         const end = new Date().getTime();  // End time
         const latency = end - start;  // Round-trip time in milliseconds
 
