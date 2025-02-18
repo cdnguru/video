@@ -108,7 +108,7 @@
     <div class="gauge">Played: <span id="playTime">0s</span></div>
     <div class="gauge">Rebuffering: <span id="bufferingTime">0s</span></div>
     <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span><br>Latency: <span id="latency">?</span> ms</div>
-    <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span><br>Startup: <span id="startupTime">?</span id> s</div>
+    <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span><br>Startup: <span id="startupTime">?</span id></div>
     <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
     <div class="gauge">CDN: <span id="whoisNetwork">?</span><br>City: <span id="cityName">?</span></div>
     <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
@@ -178,20 +178,16 @@ function updateGauges() {
 }
 
 function updateGaugeColor(gaugeId, value) {
-    const gauge = document.getElementById(gaugeId);
+    const gauge = document.getElementById(gaugeId).parentElement;  // Get parent div (gauge)
     
-    // Convert value to a number (handling cases where value is a string like "5s")
-    const numericValue = parseFloat(value); 
+    const numericValue = parseFloat(value);  // Convert value to number
 
     if (numericValue >= 1) {
-        gauge.style.borderColor = 'orange';  // Set border color to orange
+        gauge.style.borderColor = 'orange';  // Set border to orange
     } else {
-        gauge.style.borderColor = 'limegreen';  // Reset to default limegreen
+        gauge.style.borderColor = 'limegreen';  // Reset to limegreen
     }
 }
-
-
-
 
 async function resolveDomainToIP(domain) {
     try {
