@@ -212,11 +212,16 @@ async function fetchWhoisInfo(ip) {
         const response = await fetch(`https://rdap.org/ip/${ip}`);
         const data = await response.json();
 
-        // Safely extract organization and network name
-        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[1] || "Unknown";
-        let networkName = data.name || "Unknown";
+        // Safely extract the organization name (Assuming it's in vcardArray or other field)
+        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[1] || "Unknown";  // Extract organization name
+        let networkName = data.name || "Unknown";  // Extract network name
 
-        // Check if elements exist before updating
+        // Log and display the extracted values to ensure correctness
+        console.log("WHOIS Data:", data);
+        console.log("Organization:", orgName);
+        console.log("Network:", networkName);
+
+        // Now, update the DOM with the correct WHOIS data
         const orgElement = document.getElementById("whoisOrgName");
         const networkElement = document.getElementById("whoisNetwork");
         const ipElement = document.getElementById("whoisIP");
@@ -228,6 +233,7 @@ async function fetchWhoisInfo(ip) {
         console.error("❌ Error fetching WHOIS data:", error);
     }
 }
+
 
 function displayDrmInfo() {
         const drmInfo = player.drmInfo();
@@ -348,23 +354,23 @@ document.getElementById("playButton").addEventListener("click", async () => {
     try {
         await player.load(manifestUrl);
         video.play();
-        console.log("Video loaded and playing.");
+        console.log("🎬 Video loaded and playing.");
 
         const domain = new URL(manifestUrl).hostname;
-        console.log(`Resolving domain: ${domain}`);
+        console.log(`🔍 Resolving domain: ${domain}`);
 
         const ip = await resolveDomainToIP(domain);
         if (ip) {
-            console.log(`Final Resolved IP: ${ip}`);
-            await fetchWhoisInfo(ip);
+            console.log(`✅ Final Resolved IP: ${ip}`);
+            await fetchWhoisInfo(ip); // Fetch WHOIS data
         } else {
-            console.warn("Could not resolve IP address.");
+            console.warn("⚠️ Could not resolve IP address.");
             document.getElementById("whoisOrgName").textContent = "Unknown";
             document.getElementById("whoisNetwork").textContent = "Unknown";
             document.getElementById("whoisIP").textContent = "N/A";
         }
     } catch (error) {
-        console.error("Error loading video:", error);
+        console.error("❌ Error loading video:", error);
     }
 });
 
