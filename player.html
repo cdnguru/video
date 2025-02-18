@@ -107,10 +107,10 @@
     <div class="gauge">Stalls: <span id="stallsDetected">0</span></div>
     <div class="gauge">Played: <span id="playTime">0s</span></div>
     <div class="gauge">Rebuffering: <span id="bufferingTime">0s</span></div>
-    <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span></div>
+    <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span>Latency: <span id="latency">?</span></div>
     <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span></div>
     <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
-    <div class="gauge">CDN: <span id="whoisNetwork">?</span></div>
+    <div class="gauge">CDN: <span id="whoisNetwork">?</span>City: <span id="cityName">?</span></div>
     <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
     <div class="gauge">Live: <span id="liveStatus">False</span></div>
 </div>
@@ -231,6 +231,42 @@ async function fetchWhoisInfo(ip) {
         if (ipElement) ipElement.textContent = ip;
     } catch (error) {
         console.error("❌ Error fetching WHOIS data:", error);
+    }
+}
+async function fetchCityInfo(ip) {
+    try {
+        // Use ipwhois.io for geolocation info based on the resolved IP (HTTPS)
+        const response = await fetch(`https://ipwhois.app/json/${ip}`);
+        const data = await response.json();
+        
+        // Extract city information from the API response
+        const city = data.city || "Unknown";  // If no city, fallback to "Unknown"
+        console.log(`City for IP ${ip}: ${city}`);
+        
+        // Update the City field with the city name
+        document.getElementById("cityName").textContent = city;
+    } catch (error) {
+        console.error("Error fetching city info:", error);
+        document.getElementById("cityName").textContent = "Unknown";  // If city fetch fails
+    }
+}
+async function pingIP(ip) {
+    const start = new Date().getTime();  // Start time (in milliseconds)
+
+    try {
+        const response = await fetch(`http://${ip}`);  // Send a GET request to the resolved IP
+        const end = new Date().getTime();  // End time
+        const latency = end - start;  // Round-trip time in milliseconds
+
+        console.log(`Ping to ${ip}: ${latency} ms`);
+        // Update the Latency gauge with the latency in ms
+        document.getElementById("latency").textContent = latency;  // Update latency in the Latency gauge
+
+        // Fetch the City based on the resolved IP (using ipwhois.io)
+        fetchCityInfo(ip);  // Fetch city information and update the City gauge
+    } catch (error) {
+        console.error("Error pinging IP:", error);
+        document.getElementById("latency").textContent = "Error";  // If ping fails
     }
 }
 
@@ -359,15 +395,26 @@ document.getElementById("playButton").addEventListener("click", async () => {
         const domain = new URL(manifestUrl).hostname;
         console.log(`🔍 Resolving domain: ${domain}`);
 
+        // Resolve the domain to its IP address
         const ip = await resolveDomainToIP(domain);
         if (ip) {
             console.log(`✅ Final Resolved IP: ${ip}`);
-            await fetchWhoisInfo(ip); // Fetch WHOIS data
+
+            // Fetch WHOIS data (this part is used to fetch additional details like CDN)
+            await fetchWhoisInfo(ip);
+
+            // Ping the resolved IP and get the latency
+            pingIP(ip);  
+
+            // Fetch the city based on the resolved IP and display it
+            fetchCityInfo(ip);  
         } else {
             console.warn("⚠️ Could not resolve IP address.");
-            document.getElementById("whoisOrgName").textContent = "Unknown";
-            document.getElementById("whoisNetwork").textContent = "Unknown";
-            document.getElementById("whoisIP").textContent = "N/A";
+            document.getElementById("latency").textContent = "Error";  // If IP resolution fails
+            document.getElementById("cityName").textContent = "Unknown";  // If city fetch fails
+            document.getElementById("whoisOrgName").textContent = "Unknown";  // WHOIS fails
+            document.getElementById("whoisNetwork").textContent = "Unknown";  // WHOIS fails
+            document.getElementById("whoisIP").textContent = "N/A";  // WHOIS fails
         }
     } catch (error) {
         console.error("❌ Error loading video:", error);
@@ -397,7 +444,6 @@ function initGraphs() {
     },
     xaxis: { 
       labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
-      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
     }
   });
 
@@ -413,7 +459,6 @@ function initGraphs() {
     xaxis: { 
       categories: xAxisLabels,
       labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
-      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
     }
   });
 
