@@ -401,8 +401,6 @@ function initGraphs() {
     }
   });
 
-
-
   window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
     chart: { type: 'scatter', height: 300, toolbar: { show: false } },
     series: [{ name: 'Audio Segments', data: [], color: '#FF33AA;' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
@@ -418,7 +416,6 @@ function initGraphs() {
       title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
     }
   });
-}
 
       window.bandwidthChart.render();
       window.latencyChart.render();
