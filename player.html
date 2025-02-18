@@ -168,25 +168,25 @@ function updateGauges() {
     // Update the protocol display
     document.getElementById("httpProtocol").textContent = detectedProtocol || "?";
 
-    // Dynamic color update for gauges (Orange if greater than 0)
+    // Dynamic color update for gauges (Orange border if greater than or equal to 1)
     updateGaugeColor("droppedFrames", stats.droppedFrames);
     updateGaugeColor("stallsDetected", stats.stallsDetected);
     updateGaugeColor("corruptedFrames", stats.corruptedFrames);
     updateGaugeColor("bufferingTime", stats.bufferingTime);
 }
 
-// Function to dynamically update the gauge color based on value
+// Function to dynamically update the gauge border color based on value
 function updateGaugeColor(gaugeId, value) {
     const gauge = document.getElementById(gaugeId);
     
-    if (value > 0) {
-        // If value is greater than 0, change color to orange
-        gauge.style.backgroundColor = 'orange';
+    // If the value is greater than or equal to 1, change the border color to orange
+    if (value >= 1) {
+        gauge.style.borderColor = 'orange';  // Set border color to orange
     } else {
-        // If value is 0, reset to limegreen
-        gauge.style.backgroundColor = 'limegreen';
+        gauge.style.borderColor = 'limegreen';  // Reset to default limegreen
     }
 }
+
 
 
 async function resolveDomainToIP(domain) {
