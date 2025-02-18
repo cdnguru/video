@@ -419,20 +419,6 @@ function initGraphs() {
     }
   });
 }
-' }, { name: 'Video Segments', data: [], color: 'limegreen' }],
-    markers: { size: 4, strokeWidth: 0 },
-    grid: { show: false },
-    yaxis: {
-      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // Y-axis label color
-      title: { text: 'Latency', style: { fontSize: '14px', color: 'limegreen' } }  // Y-axis title color
-    },
-    xaxis: { 
-      categories: xAxisLabels,
-      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
-      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
-    }
-  });
-}
 
       window.bandwidthChart.render();
       window.latencyChart.render();
