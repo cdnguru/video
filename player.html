@@ -406,36 +406,46 @@ function updateLatencyGraph() {
 }
 
 document.getElementById("playButton").addEventListener("click", async () => {
-    const manifestUrl = document.getElementById("manifestUrl").value;
+    const manifestUrl = document.getElementById("manifestUrl").value.trim(); // Ensure no extra spaces
+
+    if (!manifestUrl) {
+        console.error("❌ Manifest URL is empty!");
+        return;
+    }
+
+    console.log(`🎬 Attempting to load manifest: ${manifestUrl}`);
+
     try {
         await player.load(manifestUrl);
-        video.play();
-        console.log("🎬 Video loaded and playing.");
+        document.getElementById("videoPlayer").play();
+        console.log("✅ Video loaded and playing.");
 
         const domain = new URL(manifestUrl).hostname;
         console.log(`🔍 Resolving domain: ${domain}`);
 
-        // Resolve the domain to its IP address
-        const ip = await resolveDomainToIP(domain);
-        if (ip) {
-            console.log(`✅ Final Resolved IP: ${ip}`);
+        // Ensure pingIP runs only AFTER manifest has loaded
+        player.getNetworkingEngine().registerResponseFilter((type, response) => {
+            if (type === shaka.net.NetworkingEngine.RequestType.MANIFEST) {
+                console.log("✅ Manifest Loaded Successfully");
 
-            // Fetch WHOIS data (this part is used to fetch additional details like CDN)
-            await fetchWhoisInfo(ip);
+                resolveDomainToIP(domain).then((ip) => {
+                    if (ip) {
+                        console.log(`✅ Final Resolved IP: ${ip}`);
+                        fetchWhoisInfo(ip);
+                        fetchCityInfo(ip);
+                        pingIP(domain);  // Run latency check
+                    } else {
+                        console.warn("⚠️ Could not resolve IP address.");
+                        document.getElementById("latency").textContent = "Error";
+                        document.getElementById("cityName").textContent = "Unknown";
+                        document.getElementById("whoisOrgName").textContent = "Unknown";
+                        document.getElementById("whoisNetwork").textContent = "Unknown";
+                        document.getElementById("whoisIP").textContent = "N/A";
+                    }
+                });
+            }
+        });
 
-            // Ping the resolved IP and get the latency
-            pingIP(ip);  
-
-            // Fetch the city based on the resolved IP and display it
-            fetchCityInfo(ip);  
-        } else {
-            console.warn("⚠️ Could not resolve IP address.");
-            document.getElementById("latency").textContent = "Error";  // If IP resolution fails
-            document.getElementById("cityName").textContent = "Unknown";  // If city fetch fails
-            document.getElementById("whoisOrgName").textContent = "Unknown";  // WHOIS fails
-            document.getElementById("whoisNetwork").textContent = "Unknown";  // WHOIS fails
-            document.getElementById("whoisIP").textContent = "N/A";  // WHOIS fails
-        }
     } catch (error) {
         console.error("❌ Error loading video:", error);
     }
