@@ -48,7 +48,7 @@
     .retro-input {
       background: black;
       color: limegreen;
-      border: 4px solid limegreen;
+      border: 2px solid limegreen;
       padding: 10px;
       flex-grow: 1;
       font-family: 'Press Start 2P', monospace;
@@ -57,7 +57,7 @@
     .retro-button {
       background: black;
       color: limegreen;
-      border: 4px solid limegreen;
+      border: 2px solid limegreen;
       padding: 10px;
       font-family: 'Press Start 2P', monospace;
       cursor: pointer;
@@ -73,7 +73,7 @@
     .gauge {
       width: 12%;
       padding: 10px;
-      border: 4px solid limegreen;
+      border: 2px solid limegreen;
       text-align: center;
       font-size: 12px;
     }
@@ -86,7 +86,7 @@
     .graph {
       width: 48%;
       height: 300px;
-      border: 4px solid limegreen;
+      border: 2px solid limegreen;
     }
   </style>
 </head>
@@ -110,7 +110,7 @@
     <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span></div>
     <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span></div>
     <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
-    <div class="gauge">CDN: <span id="whoisOrgName">?</span></div>
+    <div class="gauge">CDN: <span id="whoisNetwork">?</span></div>
     <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
     <div class="gauge">Live: <span id="liveStatus">False</span></div>
 </div>
@@ -171,31 +171,66 @@ function updateGauges() {
 
 async function resolveDomainToIP(domain) {
     try {
-        const response = await fetch(`https://dns.google/resolve?name=${domain}&type=A`);
-        const data = await response.json();
-        if (data && data.Answer && data.Answer.length > 0) {
-            return data.Answer[0].data; // Returns the first resolved IP
+        let currentDomain = domain;
+        let maxLookups = 5; // Prevent infinite loops
+
+        while (maxLookups > 0) {
+            const response = await fetch(`https://dns.google/resolve?name=${currentDomain}&type=A`);
+            const data = await response.json();
+
+            if (data && data.Answer) {
+                for (let answer of data.Answer) {
+                    if (answer.type === 1) { // Type 1 = IPv4 address
+                        console.log(`Resolved IP: ${answer.data}`);
+                        return answer.data; // Return the first valid IPv4
+                    } else if (answer.type === 5) { // Type 5 = CNAME
+                        console.log(`Resolved CNAME: ${answer.data}, continuing lookup...`);
+                        currentDomain = answer.data; // Follow the CNAME
+                        break;
+                    }
+                }
+            } else {
+                console.warn("No valid DNS response.");
+                return null;
+            }
+
+            maxLookups--; // Prevent infinite loops
         }
     } catch (error) {
         console.error("Error resolving domain to IP:", error);
     }
-    return null; // Return null if no IP was found
+    return null; // Return null if no valid IP is found
 }
 
 async function fetchWhoisInfo(ip) {
+    if (!ip || !ip.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
+        console.warn("⚠️ Invalid IP for WHOIS lookup:", ip);
+        return;
+    }
+
     try {
         const response = await fetch(`https://rdap.org/ip/${ip}`);
         const data = await response.json();
 
-        // Extract organization info
-        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[3] || "Unknown";
-        let networkName = data.name || "Unknown";
+        // Safely extract the organization name (Assuming it's in vcardArray or other field)
+        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[1] || "Unknown";  // Extract organization name
+        let networkName = data.name || "Unknown";  // Extract network name
 
-        document.getElementById("whoisOrgName").textContent = orgName;
-        document.getElementById("whoisNetwork").textContent = networkName;
-        document.getElementById("whoisIP").textContent = ip;
+        // Log and display the extracted values to ensure correctness
+        console.log("WHOIS Data:", data);
+        console.log("Organization:", orgName);
+        console.log("Network:", networkName);
+
+        // Now, update the DOM with the correct WHOIS data
+        const orgElement = document.getElementById("whoisOrgName");
+        const networkElement = document.getElementById("whoisNetwork");
+        const ipElement = document.getElementById("whoisIP");
+
+        if (orgElement) orgElement.textContent = orgName;
+        if (networkElement) networkElement.textContent = networkName;
+        if (ipElement) ipElement.textContent = ip;
     } catch (error) {
-        console.error("Error fetching WHOIS data:", error);
+        console.error("❌ Error fetching WHOIS data:", error);
     }
 }
 
@@ -270,6 +305,7 @@ function addLatencyData(segmentLatency, segmentType) {
     updateLatencyGraph();
 }
    // Detect HTTP Protocol (HTTP/1.1, HTTP/2, HTTP/3)
+      let detectedProtocol = "?";  // Default value before it is determined
       player.getNetworkingEngine().registerResponseFilter((type, response) => {
           if (response && response.headers) {
               if (response.headers['alt-svc'] && response.headers['alt-svc'].includes('h3')) {
@@ -316,41 +352,33 @@ function updateLatencyGraph() {
 document.getElementById("playButton").addEventListener("click", async () => {
     const manifestUrl = document.getElementById("manifestUrl").value;
     try {
-        // Load the video and play it
         await player.load(manifestUrl);
         video.play();
-        console.log("Video loaded and playing.");
+        console.log("🎬 Video loaded and playing.");
 
-        // Extract domain from manifest URL
         const domain = new URL(manifestUrl).hostname;
-        console.log(`Resolving domain: ${domain}`);
+        console.log(`🔍 Resolving domain: ${domain}`);
 
-        // Fetch CDN info (existing functionality)
-        await fetchCdnInfo(domain);
-
-        // Resolve domain to IP
         const ip = await resolveDomainToIP(domain);
         if (ip) {
-            console.log(`Resolved IP: ${ip}`);
-            await fetchWhoisInfo(ip); // Perform WHOIS lookup on the resolved IP
+            console.log(`✅ Final Resolved IP: ${ip}`);
+            await fetchWhoisInfo(ip); // Fetch WHOIS data
         } else {
-            console.warn("Could not resolve IP address.");
+            console.warn("⚠️ Could not resolve IP address.");
             document.getElementById("whoisOrgName").textContent = "Unknown";
             document.getElementById("whoisNetwork").textContent = "Unknown";
             document.getElementById("whoisIP").textContent = "N/A";
         }
     } catch (error) {
-        console.error("Error loading video:", error);
+        console.error("❌ Error loading video:", error);
     }
 });
-
 
       initGraphs();
       setInterval(updateGraphs, 1000);
     
       const manifestUrl = document.getElementById("manifestUrl").value;
       const domain = new URL(manifestUrl).hostname;
-      await fetchCdnInfo(domain);
 
       player.addEventListener('drmsessionupdate', displayDrmInfo);
       displayLiveStatus();
@@ -373,9 +401,11 @@ function initGraphs() {
     }
   });
 
+
+
   window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
     chart: { type: 'scatter', height: 300, toolbar: { show: false } },
-    series: [{ name: 'Audio Segments', data: [], color: '#FF10F0' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
+    series: [{ name: 'Audio Segments', data: [], color: '#FF33AA;' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
     markers: { size: 4, strokeWidth: 0 },
     grid: { show: false },
     yaxis: {
@@ -389,7 +419,20 @@ function initGraphs() {
     }
   });
 }
-
+' }, { name: 'Video Segments', data: [], color: 'limegreen' }],
+    markers: { size: 4, strokeWidth: 0 },
+    grid: { show: false },
+    yaxis: {
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // Y-axis label color
+      title: { text: 'Latency', style: { fontSize: '14px', color: 'limegreen' } }  // Y-axis title color
+    },
+    xaxis: { 
+      categories: xAxisLabels,
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
+      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
+    }
+  });
+}
 
       window.bandwidthChart.render();
       window.latencyChart.render();
