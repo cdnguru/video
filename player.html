@@ -403,7 +403,7 @@ function initGraphs() {
 
   window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
     chart: { type: 'scatter', height: 300, toolbar: { show: false } },
-    series: [{ name: 'Audio Segments', data: [], color: '#FF33AA;' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
+    series: [{ name: 'Audio Segments', data: [], color: '#FF33AA' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
     markers: { size: 4, strokeWidth: 0 },
     grid: { show: false },
     yaxis: {
