@@ -167,7 +167,27 @@ function updateGauges() {
     
     // Update the protocol display
     document.getElementById("httpProtocol").textContent = detectedProtocol || "?";
+
+    // Dynamic color update for gauges (Orange if greater than 0)
+    updateGaugeColor("droppedFrames", stats.droppedFrames);
+    updateGaugeColor("stallsDetected", stats.stallsDetected);
+    updateGaugeColor("corruptedFrames", stats.corruptedFrames);
+    updateGaugeColor("bufferingTime", stats.bufferingTime);
 }
+
+// Function to dynamically update the gauge color based on value
+function updateGaugeColor(gaugeId, value) {
+    const gauge = document.getElementById(gaugeId);
+    
+    if (value > 0) {
+        // If value is greater than 0, change color to orange
+        gauge.style.backgroundColor = 'orange';
+    } else {
+        // If value is 0, reset to limegreen
+        gauge.style.backgroundColor = 'limegreen';
+    }
+}
+
 
 async function resolveDomainToIP(domain) {
     try {
