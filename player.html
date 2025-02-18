@@ -254,11 +254,11 @@ async function pingIP(ip) {
     const start = new Date().getTime();  // Start time (in milliseconds)
 
     try {
-        const response = await fetch(`https://${ip}`);  // Send a GET request to the resolved IP
+        const response = await fetch(`https://${domain}`);  // Send a GET request to the resolved IP
         const end = new Date().getTime();  // End time
         const latency = end - start;  // Round-trip time in milliseconds
 
-        console.log(`Ping to ${ip}: ${latency} ms`);
+        console.log(`Ping to ${domain}: ${latency} ms`);
         // Update the Latency gauge with the latency in ms
         document.getElementById("latency").textContent = latency;  // Update latency in the Latency gauge
 
