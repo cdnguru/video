@@ -356,31 +356,40 @@ document.getElementById("playButton").addEventListener("click", async () => {
       displayLiveStatus();
 }
 
-    function initGraphs() {
-      window.bandwidthChart = new ApexCharts(document.querySelector("#bandwidthGraph"), {
-        chart: { type: 'line', height: 300, toolbar: { show: false } },
-        series: [{ name: 'Bandwidth (Mbps)', data: [] }],
-        colors: ['limegreen'],
-        stroke: { curve: 'smooth', width: 1.5 },
-        grid: { show: false },
-        yaxis: {
-          labels: { style: { fontSize: '16px', color: 'white' } },
-          title: { text: 'Mbps', style: { fontSize: '18px', color: 'limegreen', fontWeight: 'bold' } }
-        },
-        xaxis: { labels: { style: { fontSize: '14px', color: 'white' } } }
-      });
+function initGraphs() {
+  window.bandwidthChart = new ApexCharts(document.querySelector("#bandwidthGraph"), {
+    chart: { type: 'line', height: 300, toolbar: { show: false } },
+    series: [{ name: 'Bandwidth (Mbps)', data: [] }],
+    colors: ['limegreen'],
+    stroke: { curve: 'smooth', width: 1.5 },
+    grid: { show: false },
+    yaxis: {
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // Y-axis label color
+      title: { text: 'Mbps', style: { fontSize: '14px', color: 'limegreen' } }  // Y-axis title color
+    },
+    xaxis: { 
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
+      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
+    }
+  });
 
-      window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
-        chart: { type: 'scatter', height: 300, toolbar: { show: false } },
-        series: [{ name: 'Audio Segments', data: [], color: 'blue' }, { name: 'Video Segments', data: [], color: 'green' }],
-        markers: { size: 5, strokeWidth: 0 },
-        grid: { show: false },
-        yaxis: {
-          labels: { style: { fontSize: '16px', color: 'white' } },
-          title: { text: 'ms', style: { fontSize: '18px', color: 'limegreen', fontWeight: 'bold' } }
-        },
-        xaxis: { categories: xAxisLabels, labels: { style: { fontSize: '14px', color: 'white' } } }
-      });
+  window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
+    chart: { type: 'scatter', height: 300, toolbar: { show: false } },
+    series: [{ name: 'Audio Segments', data: [], color: '#FF10F0' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
+    markers: { size: 4, strokeWidth: 0 },
+    grid: { show: false },
+    yaxis: {
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // Y-axis label color
+      title: { text: 'Latency', style: { fontSize: '14px', color: 'limegreen' } }  // Y-axis title color
+    },
+    xaxis: { 
+      categories: xAxisLabels,
+      labels: { style: { fontSize: '14px', color: 'limegreen' } },  // X-axis label color
+      title: { text: 'Time', style: { fontSize: '14px', color: 'limegreen' } }  // X-axis title color
+    }
+  });
+}
+
 
       window.bandwidthChart.render();
       window.latencyChart.render();
