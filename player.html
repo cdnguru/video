@@ -108,7 +108,7 @@
     <div class="gauge">Played: <span id="playTime">0s</span></div>
     <div class="gauge">Rebuffering: <span id="bufferingTime">0s</span></div>
     <div class="gauge">Bandwidth: <span id="estimatedBandwidth">0 Mbps</span><br>Latency: <span id="latency">?</span> ms</div>
-    <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span></div>
+    <div class="gauge">Bitrate: <span id="streamBandwidth">0 Mbps</span><br>Startup: <span id="startupTime">?</span id> s</div>
     <div class="gauge">Protocol: <span id="httpProtocol">?</span></div>
     <div class="gauge">CDN: <span id="whoisNetwork">?</span><br>City: <span id="cityName">?</span></div>
     <div class="gauge">DRM: <span id="drmKeySystem">False</span></div>
@@ -158,6 +158,7 @@ function updateGauges() {
     document.getElementById("stallsDetected").textContent = stats.stallsDetected || 0;
     document.getElementById("playTime").textContent = Math.round(stats.playTime) + "s";
     document.getElementById("bufferingTime").textContent = Math.round(stats.bufferingTime) + "s";
+    document.getElementById("startupTime").textContent = stats.loadLatency ? stats.loadLatency.toFixed(2) + "s" : "N/A";
 
     const estimatedBandwidthMbps = stats.estimatedBandwidth ? Math.floor(stats.estimatedBandwidth / 1e6) : 0;
     const streamBandwidthMbps = stats.streamBandwidth ? Math.floor(stats.streamBandwidth / 1e6) : 0;
@@ -172,20 +173,23 @@ function updateGauges() {
     updateGaugeColor("droppedFrames", stats.droppedFrames);
     updateGaugeColor("stallsDetected", stats.stallsDetected);
     updateGaugeColor("corruptedFrames", stats.corruptedFrames);
-    updateGaugeColor("bufferingTime", stats.bufferingTime);
+    updateGaugeColor("bufferingTime", Math.round(stats.bufferingTime)); // Ensure numeric value
+
 }
 
-// Function to dynamically update the gauge border color based on value
 function updateGaugeColor(gaugeId, value) {
     const gauge = document.getElementById(gaugeId);
     
-    // If the value is greater than or equal to 1, change the border color to orange
-    if (value >= 1) {
+    // Convert value to a number (handling cases where value is a string like "5s")
+    const numericValue = parseFloat(value); 
+
+    if (numericValue >= 1) {
         gauge.style.borderColor = 'orange';  // Set border color to orange
     } else {
         gauge.style.borderColor = 'limegreen';  // Reset to default limegreen
     }
 }
+
 
 
 
