@@ -270,6 +270,7 @@ function addLatencyData(segmentLatency, segmentType) {
     updateLatencyGraph();
 }
    // Detect HTTP Protocol (HTTP/1.1, HTTP/2, HTTP/3)
+      let detectedProtocol = "?";  // Default value before it is determined
       player.getNetworkingEngine().registerResponseFilter((type, response) => {
           if (response && response.headers) {
               if (response.headers['alt-svc'] && response.headers['alt-svc'].includes('h3')) {
@@ -325,9 +326,6 @@ document.getElementById("playButton").addEventListener("click", async () => {
         const domain = new URL(manifestUrl).hostname;
         console.log(`Resolving domain: ${domain}`);
 
-        // Fetch CDN info (existing functionality)
-        await fetchCdnInfo(domain);
-
         // Resolve domain to IP
         const ip = await resolveDomainToIP(domain);
         if (ip) {
@@ -350,7 +348,6 @@ document.getElementById("playButton").addEventListener("click", async () => {
     
       const manifestUrl = document.getElementById("manifestUrl").value;
       const domain = new URL(manifestUrl).hostname;
-      await fetchCdnInfo(domain);
 
       player.addEventListener('drmsessionupdate', displayDrmInfo);
       displayLiveStatus();
