@@ -202,13 +202,9 @@ async function resolveDomainToIP(domain) {
     return null; // Return null if no valid IP is found
 }
 
-
 async function fetchWhoisInfo(ip) {
     if (!ip || !ip.match(/^(\d{1,3}\.){3}\d{1,3}$/)) {
-        console.warn("Invalid IP for WHOIS lookup:", ip);
-        document.getElementById("whoisOrgName").textContent = "Invalid IP";
-        document.getElementById("whoisNetwork").textContent = "N/A";
-        document.getElementById("whoisIP").textContent = "N/A";
+        console.warn("⚠️ Invalid IP for WHOIS lookup:", ip);
         return;
     }
 
@@ -216,18 +212,22 @@ async function fetchWhoisInfo(ip) {
         const response = await fetch(`https://rdap.org/ip/${ip}`);
         const data = await response.json();
 
-        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[3] || "Unknown";
+        // Safely extract organization and network name
+        let orgName = data.entities?.[0]?.vcardArray?.[1]?.[1] || "Unknown";
         let networkName = data.name || "Unknown";
 
-        document.getElementById("whoisOrgName").textContent = orgName;
-        document.getElementById("whoisNetwork").textContent = networkName;
-        document.getElementById("whoisIP").textContent = ip;
+        // Check if elements exist before updating
+        const orgElement = document.getElementById("whoisOrgName");
+        const networkElement = document.getElementById("whoisNetwork");
+        const ipElement = document.getElementById("whoisIP");
+
+        if (orgElement) orgElement.textContent = orgName;
+        if (networkElement) networkElement.textContent = networkName;
+        if (ipElement) ipElement.textContent = ip;
     } catch (error) {
-        console.error("Error fetching WHOIS data:", error);
+        console.error("❌ Error fetching WHOIS data:", error);
     }
 }
-
-
 
 function displayDrmInfo() {
         const drmInfo = player.drmInfo();
