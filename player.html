@@ -474,7 +474,7 @@ function initGraphs() {
   window.latencyChart = new ApexCharts(document.querySelector("#latencyGraph"), {
     chart: { type: 'scatter', height: 300, toolbar: { show: false } },
     series: [{ name: 'Audio Segments', data: [], color: '#FF33AA' }, { name: 'Video Segments', data: [], color: '#1589FF' }],
-    markers: { size: 3, strokeWidth: 0 },
+    markers: { size: 4, strokeWidth: 1 },
     grid: { show: false },
     yaxis: {
       labels: { style: { fontSize: '14px', color: 'limegreen' } },  // Y-axis label color
